@@ -1,0 +1,5 @@
+Programme du recepteur de commande de volets.
+Base sur un 18f25K50 de Microchip et une carte radio MRF24J40MA
+Environnement MPLABX et C18 version 3.45
+Utilisation des librairies fournies par Microchip pour accéder à l'EEPROM, à la
+communication SPI.
