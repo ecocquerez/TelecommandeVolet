@@ -14,6 +14,7 @@
 #include "WirelessProtocols/MCHP_API.h"
 #include "domoproto.h"
 #include "RecepteurVolet/WirelessProtocols/MCHP_API.h"
+#include "RecepteurVolet/HardwareProfile.h"
 
 // CONFIG1L
 #pragma config PLLSEL = PLL4X   // PLL Selection (4x clock multiplier)
@@ -127,6 +128,7 @@ extern WORD myPrivatePanId;
 // Initialisation des paramètres hardware de la carte
 
 volatile unsigned char HaveToSendHearthBeat;
+volatile unsigned char longPressButton;
 volatile BYTE ledValue = 0;
 volatile BYTE smallWait = 0;
 Entete Emission;
@@ -142,12 +144,14 @@ void LitInternalParameters(pInternal pLecture);
 void WriteEntete(void);
 void SmallWait(BYTE waiting);
 
+#pragma code
 void main(void)
 {
     Entete * pReception;
     ShutterState EtatCourrant;
     char value = 0;
-    unsigned char Shutter = 0;
+    unsigned char lastValue = 0;
+    unsigned char ShutterSelected = 0;
     BYTE Destinataire[MY_ADDRESS_LENGTH] = {0x06,0x08,0x26,0x83,0x82,0x00,0x00,0x02};
     //Settings oscillator
     // primary internal oscillator
@@ -229,12 +233,13 @@ void main(void)
             {
                 SmallWait(2);
             }
-            Shutter++;
-            if(Shutter == 6)
+            ShutterSelected++;
+            lastValue = 0;
+            if(ShutterSelected == 6)
             {
-                Shutter = 1;
+                ShutterSelected = 1;
             }
-            switch (Shutter)
+            switch (ShutterSelected)
             {
                 case 1:
                     SELECT_SHUTTER_1 = 1;
@@ -270,54 +275,81 @@ void main(void)
 
             }
         }
-        if(CMD_UP == 0)
+        if(CMD_UP == 1 && lastValue == ShutterUp)
+        {
+            if(longPressButton == 0)
+            {
+                Emission.Command = ShutterStop;
+                lastValue = Emission.Command;
+                WriteEntete();
+                if(ShutterSelected == 5)
+                {
+                    MiApp_BroadcastPacket(FALSE);
+                }
+                else
+                {
+                    Destinataire[7] = ShutterSelected + 1;
+                    value = MiApp_UnicastAddress(Destinataire,TRUE,FALSE);
+                }
+            }
+            lastValue = 0;
+        }
+        if(CMD_DOWN == 1 && lastValue == ShutterDown)
+        {
+            if(longPressButton == 0)
+            {
+                Emission.Command = ShutterStop;
+                lastValue = Emission.Command;
+                WriteEntete();
+                if(ShutterSelected == 5)
+                {
+                    MiApp_BroadcastPacket(FALSE);
+                }
+                else
+                {
+                    Destinataire[7] = ShutterSelected + 1;
+                    value = MiApp_UnicastAddress(Destinataire,TRUE,FALSE);
+                }
+            }
+            lastValue = 0;
+        }
+
+        if(CMD_UP == 0 && lastValue != ShutterUp)
         {
             SmallWait(2);
             if(CMD_UP == 0)
             {
-                SmallWait(2);
-                if(CMD_UP == 0)
-                {
-                    Emission.Command = ShutterUpLong;
-                }
-                else
-                {
-                    Emission.Command = ShutterUpShort;
-                }
+                longPressButton = 1;
+                Emission.Command = ShutterUp;
+                lastValue = Emission.Command;
                 WriteEntete();
-                if(Shutter == 5)
+                if(ShutterSelected == 5)
                 {
                     MiApp_BroadcastPacket(FALSE);
                 }
                 else
                 {
-                    Destinataire[7] = Shutter + 1;
+                    Destinataire[7] = ShutterSelected + 1;
                     value = MiApp_UnicastAddress(Destinataire,TRUE,FALSE);
                 }
             }
         }
-        if(CMD_DOWN == 0)
+        if(CMD_DOWN == 0 && lastValue != ShutterDown)
         {
             SmallWait(2);
             if(CMD_DOWN == 0)
             {
-                SmallWait(2);
-                if(CMD_DOWN == 0)
-                {
-                    Emission.Command = ShutterDownLong;
-                }
-                else
-                {
-                    Emission.Command = ShutterDownShort;
-                }
+                longPressButton = 1;
+                Emission.Command = ShutterDown;
+                lastValue = Emission.Command;
                 WriteEntete();
-                if(Shutter == 5)
+                if(ShutterSelected == 5)
                 {
                     MiApp_BroadcastPacket(FALSE);
                 }
                 else
                 {
-                    Destinataire[7] = Shutter + 1;
+                    Destinataire[7] = ShutterSelected + 1;
                     value = MiApp_UnicastAddress(Destinataire,TRUE,FALSE);
                 }
             }
@@ -375,6 +407,7 @@ void WriteEntete(void)
 void UserInterruptHandler(void)
 {
     static unsigned char compteurSeconde = 0x00;
+    static unsigned char compteurLongPress = 0x00;
     static unsigned char ellapsed = 0x00;
     if(PIR1bits.TMR1IF == 1)
     {
@@ -385,6 +418,15 @@ void UserInterruptHandler(void)
         if(smallWait != 0)
         {
             smallWait--;
+        }
+        if(longPressButton == 1)
+        {
+            compteurLongPress++;
+            if(compteurLongPress == 10)
+            {
+                longPressButton = 0;
+                compteurLongPress = 0;
+            }
         }
         if(compteurSeconde == 20)
         {
@@ -418,7 +460,7 @@ unsigned char DoConnection(void)
     //Note from Microchip, We have to clear reception
     MiApp_ProtocolInit(FALSE);
     //On définit un port par défaut
-    MiApp_SetChannel(16);
+    //MiApp_SetChannel(16);
     if(MiMAC_ReceivedPacket())
     {
         MiApp_DiscardMessage();
