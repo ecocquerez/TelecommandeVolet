@@ -5,7 +5,12 @@
  * Created on 15 octobre 2011, 18:00
  */
 #include <p18cxxx.h>
+#ifdef PIC18F25K50
 #include <p18f25k50.h>
+#endif
+#ifdef PIC18F2550
+#include <p18f2550.h>
+#endif
 #include <delays.h>
 #include <spi.h>
 #include <EEP.h>
@@ -16,6 +21,7 @@
 #include "RecepteurVolet/WirelessProtocols/MCHP_API.h"
 #include "RecepteurVolet/HardwareProfile.h"
 
+#ifdef PIC18F25K50
 // CONFIG1L
 #pragma config PLLSEL = PLL4X   // PLL Selection (4x clock multiplier)
 #pragma config CFGPLLEN = OFF   // PLL Enable Configuration bit (PLL Disabled)
@@ -79,6 +85,70 @@
 
 // CONFIG7H
 #pragma config EBTRB = OFF      // Boot Block Table Read Protect (Boot block is not protected from table reads executed in other blocks)
+#endif
+#ifdef PIC18F2550
+// CONFIG1L
+#pragma config PLLDIV = 1       // PLL Prescaler Selection bits (No prescale (4 MHz oscillator input drives PLL directly))
+#pragma config CPUDIV = OSC1_PLL2// System Clock Postscaler Selection bits ([Primary Oscillator Src: /1][96 MHz PLL Src: /2])
+#pragma config USBDIV = 1       // USB Clock Selection bit (used in Full-Speed USB mode only; UCFG:FSEN = 1) (USB clock source comes directly from the primary oscillator block with no postscale)
+
+// CONFIG1H
+#pragma config FOSC = INTOSC_HS // Oscillator Selection bits (Internal oscillator, HS oscillator used by USB (INTHS))
+#pragma config FCMEN = OFF       // Fail-Safe Clock Monitor Enable bit (Fail-Safe Clock Monitor enabled)
+#pragma config IESO = OFF       // Internal/External Oscillator Switchover bit (Oscillator Switchover mode disabled)
+
+// CONFIG2L
+#pragma config PWRT = ON        // Power-up Timer Enable bit (PWRT enabled)
+#pragma config BOR = OFF        // Brown-out Reset Enable bits (Brown-out Reset disabled in hardware and software)
+#pragma config BORV = 3         // Brown-out Reset Voltage bits (Minimum setting)
+#pragma config VREGEN = OFF     // USB Voltage Regulator Enable bit (USB voltage regulator disabled)
+
+// CONFIG2H
+#pragma config WDT = OFF        // Watchdog Timer Enable bit (WDT disabled (control is placed on the SWDTEN bit))
+#pragma config WDTPS = 32768    // Watchdog Timer Postscale Select bits (1:32768)
+
+// CONFIG3H
+#pragma config CCP2MX = ON      // CCP2 MUX bit (CCP2 input/output is multiplexed with RC1)
+#pragma config PBADEN = OFF     // PORTB A/D Enable bit (PORTB<4:0> pins are configured as digital I/O on Reset)
+#pragma config LPT1OSC = OFF    // Low-Power Timer 1 Oscillator Enable bit (Timer1 configured for higher power operation)
+#pragma config MCLRE = ON       // MCLR Pin Enable bit (MCLR pin enabled; RE3 input pin disabled)
+
+// CONFIG4L
+#pragma config STVREN = OFF     // Stack Full/Underflow Reset Enable bit (Stack full/underflow will not cause Reset)
+#pragma config LVP = OFF        // Single-Supply ICSP Enable bit (Single-Supply ICSP disabled)
+#pragma config XINST = OFF      // Extended Instruction Set Enable bit (Instruction set extension and Indexed Addressing mode disabled (Legacy mode))
+
+// CONFIG5L
+#pragma config CP0 = OFF        // Code Protection bit (Block 0 (000800-001FFFh) is not code-protected)
+#pragma config CP1 = OFF        // Code Protection bit (Block 1 (002000-003FFFh) is not code-protected)
+#pragma config CP2 = OFF        // Code Protection bit (Block 2 (004000-005FFFh) is not code-protected)
+#pragma config CP3 = OFF        // Code Protection bit (Block 3 (006000-007FFFh) is not code-protected)
+
+// CONFIG5H
+#pragma config CPB = OFF        // Boot Block Code Protection bit (Boot block (000000-0007FFh) is not code-protected)
+#pragma config CPD = OFF        // Data EEPROM Code Protection bit (Data EEPROM is not code-protected)
+
+// CONFIG6L
+#pragma config WRT0 = OFF       // Write Protection bit (Block 0 (000800-001FFFh) is not write-protected)
+#pragma config WRT1 = OFF       // Write Protection bit (Block 1 (002000-003FFFh) is not write-protected)
+#pragma config WRT2 = OFF       // Write Protection bit (Block 2 (004000-005FFFh) is not write-protected)
+#pragma config WRT3 = OFF       // Write Protection bit (Block 3 (006000-007FFFh) is not write-protected)
+
+// CONFIG6H
+#pragma config WRTC = OFF       // Configuration Register Write Protection bit (Configuration registers (300000-3000FFh) are not write-protected)
+#pragma config WRTB = OFF       // Boot Block Write Protection bit (Boot block (000000-0007FFh) is not write-protected)
+#pragma config WRTD = OFF       // Data EEPROM Write Protection bit (Data EEPROM is not write-protected)
+
+// CONFIG7L
+#pragma config EBTR0 = OFF      // Table Read Protection bit (Block 0 (000800-001FFFh) is not protected from table reads executed in other blocks)
+#pragma config EBTR1 = OFF      // Table Read Protection bit (Block 1 (002000-003FFFh) is not protected from table reads executed in other blocks)
+#pragma config EBTR2 = OFF      // Table Read Protection bit (Block 2 (004000-005FFFh) is not protected from table reads executed in other blocks)
+#pragma config EBTR3 = OFF      // Table Read Protection bit (Block 3 (006000-007FFFh) is not protected from table reads executed in other blocks)
+
+// CONFIG7H
+#pragma config EBTRB = OFF      // Boot Block Table Read Protection bit (Boot block (000000-0007FFh) is not protected from table reads executed in other blocks)
+
+#endif
 
 typedef struct defInternal
 {
@@ -100,24 +170,26 @@ typedef struct defShutterState
 BYTE    AdditionalNodeID[ADDITIONAL_NODE_ID_SIZE] = {0x32};
 #endif
 
-#pragma romdata myaddress
-rom unsigned char addr1 = 0x06;
-rom unsigned char addr2 = 0x08;
-rom unsigned char addr3 = 0x26;
-rom unsigned char addr4 = 0x83;
-rom unsigned char addr5 = 0x82;
-rom unsigned char addr6 = 0x00;
-rom unsigned char addr7 = 0x00;
-rom unsigned char addr8 = 0x01;     //Le master a l'adresse 1
-rom unsigned char addr9 = 0x14;
-rom unsigned char addr10 = 0x01;
-rom unsigned char addr11 = 0x01;    //Send Alive
-rom unsigned char addr12 = 0x78;    //Periode
-rom unsigned char addr13 = 0x01;    //Group
-rom unsigned char addr14 = 0x01;    //Index In Group
-rom unsigned char addr15 = 0x01;    //Index On Board
-rom unsigned char addr16 = 0x50;    //TimeOut
-#pragma romdata
+#pragma romdata eeprom_data=0xf00000
+rom unsigned char info_eeprom[] = {
+0x06,
+0x08,
+0x26,
+0x83,
+0x82,
+0x00,
+0x00,
+0x01,    //Le master a l'adresse 1
+0x14,
+0x01,
+0x01,    //Send Alive
+0x78,    //Periode
+0x01,    //Group
+0x01,    //Index In Group
+0x01,    //Index On Board
+0x50    //TimeOut
+};
+#pragma code
 
 
 extern ACTIVE_SCAN_RESULT ActiveScanResults[ACTIVE_SCAN_RESULT_SIZE];
@@ -155,43 +227,37 @@ void main(void)
     BYTE Destinataire[MY_ADDRESS_LENGTH] = {0x06,0x08,0x26,0x83,0x82,0x00,0x00,0x02};
     //Settings oscillator
     // primary internal oscillator
-    //OSCCON = 0x7B;
+#ifdef PIC18F2550
+    OSCCON = 0b01110010;
+    while(OSCCONbits.IOFS == 0)
+    {
+        Nop();
+    }
+#endif
+#ifdef PIC18F25K50
     OSCCON = 0b01101000;
     while(OSCCONbits.HFIOFS == 0)
     {
         //Waiting for stable frequency
         Nop();
     }
+#endif
+    BoardInit();
 
     EtatCourrant.stateShutter1 = Iddle;
     EtatCourrant.stateShutter2 = Iddle;
     HaveToSendHearthBeat = 0;
-    CCP1CON = 0x00;
-    ANSELA = 0x00;
-    TRISA = 0X70;
-    ANSELA = 0x00;
-    TRISB = 0x00;
-    //Shutter output
-    INTCON2bits.RBPU = 0;
-    INTCON2bits.INTEDG2 = 0;
-    //Timer 1
-    T1CON = 0b01110011; //1000000 inc per second
-    TMR1H = 0x40;
-    TMR1L = 0xB8; //We have to count 20 to have 1 second
-    PIE1bits.TMR1IE = 1;
-    T1CONbits.TMR1ON = 1;
-    INTCONbits.PEIE = 1;
-    INTCONbits.GIE = 1;
-    INTCONbits.GIEH = 1;
-
-
     // SPI configuration
-    //Reset du miwi
+#ifdef PIC18F25K50
     DisableIntSPI1;
-
-    BoardInit();
     CloseSPI1();
     OpenSPI1(SPI_FOSC_64,MODE_00,SMPMID);
+#endif
+#ifdef PIC18F2550
+    DisableIntSPI;
+    CloseSPI();
+    OpenSPI(SPI_FOSC_64,MODE_00,SMPMID);
+#endif
     //Read necessary Miwi Information in eeprom
     LitMyMiwiAddress();
     LitMyPrivatePanID();
@@ -499,9 +565,42 @@ void BoardInit(void)
     INTCONbits.GIEH = 1;
     RFIF = 0;
     RFIE = 1;
+#ifdef PIC18F25K50
+    TRISBbits.TRISB3 = 0;
+#endif
+#ifdef PIC18F2550
+    TRISCbits.TRISC7 = 0;
+#endif
+    TRISBbits.TRISB0 = 1;
+    TRISBbits.TRISB1 = 0;
     //Led de control
     TRISCbits.TRISC6 = 0;
     LATCbits.LATC6  = 0;
+
+    CCP1CON = 0x00;
+#ifdef PIC18F25K50
+    LATA = 0x00;
+    ANSELA = 0x00;
+    ANSELB = 0x00;
+#endif
+#ifdef PIC18F2550
+    ADCON1 = 0b00001111;
+#endif
+    TRISA = 0b01110000;
+    TRISB = 0x04;
+    TRISC = 0x00;
+    
+    INTCON2bits.RBPU = 0;
+    INTCON2bits.INTEDG2 = 0;
+    //Timer 1
+    T1CON = 0b01110011; //1000000 inc per second
+    TMR1H = 0x40;
+    TMR1L = 0xA8; //We have to count 20 to have 1 second
+    PIE1bits.TMR1IE = 1;
+    T1CONbits.TMR1ON = 1;
+    INTCONbits.PEIE = 1;
+    INTCONbits.GIE = 1;
+    INTCONbits.GIEH = 1;
     //On met la commande des volets en sortie et on les passe à 0
     CMD_UP = 0;
     CMD_DOWN = 0;

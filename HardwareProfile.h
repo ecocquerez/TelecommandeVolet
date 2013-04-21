@@ -33,5 +33,11 @@
 #define SELECT_SHUTTER_1    LATAbits.LATA0
 #define SELECT_SHUTTER_2    LATAbits.LATA1
 #define SELECT_SHUTTER_3    LATAbits.LATA2
+#ifdef PIC18F25K50
 #define SELECT_SHUTTER_4    LATAbits.LATA7
+#endif
+#ifdef PIC18F2550
+#define SELECT_SHUTTER_4    LATAbits.LATA3
+#endif
+
 #endif // HarwareProfile_h
